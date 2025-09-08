@@ -6,8 +6,8 @@
 <title>Smoking Tracker</title>
 <style>
     body { font-family: sans-serif; margin: 0; padding: 0; background-color: #000; color: #fff; display: flex; height: 100vh; }
-    header { display: flex; flex-direction: column; background: yellow; color: black; width: 10vw; flex-shrink: 0; height: 100vh; z-index: 10; }
-    header button { flex: 1; font-size: 22px; background: yellow; border: none; color: black; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+    header { display: flex; flex-direction: column; background: yellow; color: black; width: 15vw; flex-shrink: 0; height: 100vh; z-index: 10; }
+    header button { flex: 1; font-size: 18px; background: yellow; border: none; color: black; cursor: pointer; font-weight: bold; writing-mode: vertical-rl; text-orientation: upright; display: flex; align-items: center; justify-content: center; }
     header button.active { background: #ffd700; }
     .tab-content { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
     button#recordBtn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; font-size: 18px; background: green; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
@@ -136,12 +136,12 @@ function loadRecords() {
         for (let i = 0; i < todayRecords.length - 1; i++) {
             totalDiffMs += (new Date(todayRecords[i]) - new Date(todayRecords[i + 1]));
         }
-                const avgMs = totalDiffMs / (todayRecords.length - 1);
+        const avgMs = totalDiffMs / (todayRecords.length - 1);
         const h = Math.floor(avgMs / (1000 * 60 * 60));
         const m = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
         avgTimeEl.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
     } else {
-        avgTimeEl.textContent = '–';
+                avgTimeEl.textContent = '–';
     }
 
     recordsTableBody.innerHTML = data

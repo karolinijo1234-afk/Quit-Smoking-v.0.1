@@ -1,36 +1,113 @@
-<script>
-    const recordBtn = document.getElementById('recordBtn');
-    const recordsList = document.getElementById('records');
-    const totalTodayEl = document.getElementById('totalToday');
-    const avgTimeEl = document.getElementById('avgTime');
-    const lastTimeEl = document.getElementById('lastTime');
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Smoking Tracker</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 30px; }
+        button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        ul { list-style: none; padding: 0; }
+        .stats { margin-bottom: 20px; font-size: 18px; }
+    </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ff4d4d">
+</head>
+<body>
+    <h1>Smoking Tracker</h1>
 
-    // Lithuanian time zone
-    const LT_TIMEZONE = 'Europe/Vilnius';
+    <div class="stats">
+        <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
+        <p><strong>Average time between presses today:</strong> <span id="avgTime">–</span></p>
+        <p><strong>Last press time:</strong> <span id="lastTime">–</span></p>
+    </div>
 
-    async function loadRecords() {
-        const res = await fetch('/records');
-        const data = await res.json();
+    <ul id="records"></ul>
+    <button id="recordBtn">Record Smoking</button>
 
-        // Show all records
-        recordsList.innerHTML = data.map(r => {
-            const localTime = new Date(r.timestamp).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
-            return `<li>${localTime}</li>`;
-        }).join('');
+    <script>
+        const recordBtn = document.getElementById('recordBtn');
+        const recordsList = document.getElementById('records');
+        const totalTodayEl = document.getElementById('totalToday');
+        const avgTimeEl = document.getElementById('avgTime');
+        const lastTimeEl = document.getElementById('lastTime');
 
-        // Filter today's records (Lithuanian date)
-        const today = new Date().toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
-        const todayRecords = data.filter(r => {
-            const recDate = new Date(r.timestamp).toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
-            return recDate === today;
+        const LT_TIMEZONE = 'Europe/Vilnius';
+
+        async function loadRecords() {
+            const res = await fetch('/records');
+            const data = await res.json();
+
+            // Show all records
+            recordsList.innerHTML = data.map(r => {
+                const localTime = new Date(r.timestamp).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
+                return `<li>${localTime}</li>`;
+            }).join('');
+
+            // Filter today's records
+            const today = new Date().toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+            const todayRecords = data.filter(r => {
+                const recDate = new Date(r.timestamp).toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+                return recDate === today;
+            });
+
+            // Total today
+            totalTodayEl.textContent = todayRecords.length;
+
+            // Last press time
+            if (todayRecords.length > 0) {
+                const last = new Date(todayRecords[0].timestamp);
+                lastTimeEl.textContent = last.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
+            } else {
+                lastTimeEl.textContent = '–';
+            }
+
+            // Average time between presses today
+            if (todayRecords.length > 1) {
+                let totalDiffMs = 0;
+                for (let i = 0; i < todayRecords.length - 1; i++) {
+                    const t1 = new Date(todayRecords[i].timestamp);
+                    const t2 = new Date(todayRecords[i + 1].timestamp);
+                    totalDiffMs += (t1 - t2);
+                }
+                const avgMs = totalDiffMs / (todayRecords.length - 1);
+                const hours = Math.floor(avgMs / (1000 * 60 * 60));
+                const minutes = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
+                if (hours > 0) {
+                    avgTimeEl.textContent = `${hours}h ${minutes}m`;
+                } else {
+                    avgTimeEl.textContent = `${minutes}m`;
+                }
+            } else {
+                avgTimeEl.textContent = '–';
+            }
+        }
+
+        recordBtn.addEventListener('click', async () => {
+            await fetch('/record', { method: 'POST' });
+            loadRecords();
         });
 
-        // Total today
-        totalTodayEl.textContent = todayRecords.length;
+        loadRecords();
+    </script>
 
-        // Last press time
-        if (todayRecords.length > 0) {
-            const last = new Date(todayRecords[0].timestamp); // first in list is latest
-            lastTimeEl.textContent = last.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
-        } else {
-            lastTimeEl.textContent
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW registered with scope:', reg.scope))
+            .catch(err => console.error('SW registration failed:', err));
+    }
+    </script>
+</body>
+</html>

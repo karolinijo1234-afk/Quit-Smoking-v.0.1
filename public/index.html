@@ -9,42 +9,59 @@
             font-family: sans-serif; 
             margin: 0; 
             padding: 0; 
-            background-color: #000; /* Black background */
-            color: #fff; /* White text */
-        }
-        header {
+            background-color: #000; 
+            color: #fff; 
             display: flex;
-            background: yellow; /* Yellow tabs */
-            color: black; /* Black text on tabs */
+            height: 100vh;
         }
+        /* Sidebar */
+      header {
+    display: flex;
+    flex-direction: column;
+    background: yellow;
+    color: black;
+    width: 200px; /* wider sidebar */
+    flex-shrink: 0;
+    height: 100vh;
+    z-index: 10; /* ensure sidebar stays on top */
+}
         header button {
-            flex: 1;
-            padding: 15px;
-            font-size: 16px;
-            background: yellow; /* Yellow background */
+            flex: 1; /* equal height for both buttons */
+            font-size: 22px;
+            background: yellow;
             border: none;
-            color: black; /* Black text */
+            color: black;
             cursor: pointer;
             font-weight: bold;
+            display: flex;
+            align-items: center; /* vertical center */
+            justify-content: center; /* horizontal center */
         }
         header button.active {
-            background: #ffd700; /* Slightly darker yellow for active tab */
+            background: #ffd700;
         }
-        .tab-content { padding: 20px; }
+        /* Main content */
+        .tab-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
         button#recordBtn {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 15px 30px;
-            font-size: 18px;
-            background: green; /* Green button */
-            color: white; /* White text */
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+    position: fixed;
+    bottom: 20px;
+    left: 50%; /* center in content area */
+    transform: translateX(-50%);
+    padding: 15px 30px;
+    font-size: 18px;
+    background: green;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    z-index: 5; /* lower than sidebar */
+}
+
         .stats { 
             margin-bottom: 20px; 
             font-size: 18px; 
@@ -52,7 +69,7 @@
         }
         h1, h2 {
             text-align: center;
-            color: white; /* Ensure headings are white */
+            color: white;
         }
         table {
             width: 80%;
@@ -60,15 +77,15 @@
             border-collapse: collapse;
             margin-top: 10px;
             text-align: center;
-            background-color: #111; /* Dark table background */
-            color: white; /* White text in table */
+            background-color: #111;
+            color: white;
         }
         th, td {
-            border: 1px solid #444; /* Darker borders */
+            border: 1px solid #444;
             padding: 8px;
         }
         th {
-            background: #222; /* Darker header row */
+            background: #222;
             color: white;
         }
     </style>
@@ -77,6 +94,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Sidebar Tabs -->
     <header>
         <button id="tabTracker" class="active">Tracker</button>
         <button id="tabReports">Reports</button>
@@ -89,8 +107,9 @@
             <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
             <p><strong>Average time between cigarettes today:</strong> <span id="avgTime">–</span></p>
             <p><strong>Last cigarette:</strong> <span id="lastTime">–</span></p>
+            <p><strong>Time since:</strong> <span id="timeSince">–</span></p>
         </div>
-        <button id="recordBtn">Record Smoking</button>
+        <button id="recordBtn">Log</button>
     </div>
 
     <!-- Reports Tab -->
@@ -106,9 +125,7 @@
                     <th>Records</th>
                 </tr>
             </thead>
-            <tbody id="recordsTableBody">
-                <!-- Records will be inserted here -->
-            </tbody>
+            <tbody id="recordsTableBody"></tbody>
         </table>
     </div>
 
@@ -117,10 +134,13 @@
         const totalTodayEl = document.getElementById('totalToday');
         const avgTimeEl = document.getElementById('avgTime');
         const lastTimeEl = document.getElementById('lastTime');
+        const timeSinceEl = document.getElementById('timeSince');
         const recordsTableBody = document.getElementById('recordsTableBody');
 
         const LT_TIMEZONE = 'Europe/Vilnius';
-        const CUTOFF_HOUR = 4; // 4 AM cutoff
+        const CUTOFF_HOUR = 4;
+        let lastCigaretteTime = null;
+        let timeSinceInterval = null;
 
         function isSameCustomDay(dateA, dateB) {
             const shiftedA = new Date(dateA.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
@@ -132,6 +152,18 @@
         function getCustomDayKey(date) {
             const shifted = new Date(date.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
             return shifted.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+        }
+
+        function updateTimeSince() {
+            if (!lastCigaretteTime) {
+                timeSinceEl.textContent = '–';
+                return;
+            }
+            const diffMs = Date.now() - lastCigaretteTime.getTime();
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+            timeSinceEl.textContent = `${hours}h ${minutes}m ${seconds}s`;
         }
 
         let cigsChart;
@@ -149,10 +181,15 @@
             totalTodayEl.textContent = todayRecords.length;
 
             if (todayRecords.length > 0) {
-                const last = new Date(todayRecords[0].timestamp);
-                lastTimeEl.textContent = last.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
+                lastCigaretteTime = new Date(todayRecords[0].timestamp);
+                lastTimeEl.textContent = lastCigaretteTime.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
+                if (timeSinceInterval) clearInterval(timeSinceInterval);
+                updateTimeSince();
+                timeSinceInterval = setInterval(updateTimeSince, 1000);
             } else {
+                lastCigaretteTime = null;
                 lastTimeEl.textContent = '–';
+                timeSinceEl.textContent = '–';
             }
 
             if (todayRecords.length > 1) {
@@ -188,6 +225,7 @@
             const labels = Object.keys(dailyCounts).reverse();
             const counts = labels.map(l => dailyCounts[l]);
 
+            const ctx = document.getElementById('cigsPer
             const ctx = document.getElementById('cigsPerDayChart').getContext('2d');
             if (cigsChart) {
                 cigsChart.data.labels = labels;
@@ -206,8 +244,23 @@
                     },
                     options: {
                         responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#fff' // white legend text for dark theme
+                                }
+                            }
+                        },
                         scales: {
-                            y: { beginAtZero: true }
+                            x: {
+                                ticks: { color: '#fff' },
+                                grid: { color: '#444' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: '#fff' },
+                                grid: { color: '#444' }
+                            }
                         }
                     }
                 });
@@ -221,6 +274,7 @@
 
         loadRecords();
 
+        // Tab switching
         const tabTracker = document.getElementById('tabTracker');
         const tabReports = document.getElementById('tabReports');
         const trackerTab = document.getElementById('trackerTab');
@@ -236,9 +290,9 @@
         tabReports.addEventListener('click', () => {
             tabReports.classList.add('active');
             tabTracker.classList.remove('active');
-        trackerTab.style.display = 'none';
-        reportsTab.style.display = 'block';
-    });
+            trackerTab.style.display = 'none';
+            reportsTab.style.display = 'block';
+        });
     </script>
 
     <script>

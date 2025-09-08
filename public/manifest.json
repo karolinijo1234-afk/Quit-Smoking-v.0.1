@@ -1,6 +1,6 @@
 {
   "name": "Smoking Tracker",
-  "short_name": "Smoking",
+  "short_name": "Quit Smoking",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -10,7 +10,22 @@
     header button { flex: 1; font-size: 18px; background: yellow; border: none; color: black; cursor: pointer; font-weight: bold; writing-mode: vertical-rl; text-orientation: upright; display: flex; align-items: center; justify-content: center; }
     header button.active { background: #ffd700; }
     .tab-content { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
-    button#recordBtn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; font-size: 18px; background: green; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    button#recordBtn {
+    position: fixed; /* stays in place even when scrolling */
+    bottom: 20px;
+    left: calc(15vw + 50%); /* accounts for sidebar width */
+    transform: translateX(-50%);
+    padding: 15px 30px;
+    font-size: 18px;
+    background: green;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    z-index: 20; /* stays above other elements */
+}
+
     .stats { margin-bottom: 20px; font-size: 18px; text-align: center; }
     h1, h2 { text-align: center; color: white; }
     table { width: 80%; margin: 0 auto; border-collapse: collapse; margin-top: 10px; text-align: center; background-color: #111; color: white; }

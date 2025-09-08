@@ -15,18 +15,18 @@
             height: 100vh;
         }
         /* Sidebar */
-      header {
-    display: flex;
-    flex-direction: column;
-    background: yellow;
-    color: black;
-    width: 200px; /* wider sidebar */
-    flex-shrink: 0;
-    height: 100vh;
-    z-index: 10; /* ensure sidebar stays on top */
-}
+        header {
+            display: flex;
+            flex-direction: column;
+            background: yellow;
+            color: black;
+            width: 200px;
+            flex-shrink: 0;
+            height: 100vh;
+            z-index: 10; /* ensure sidebar stays on top */
+        }
         header button {
-            flex: 1; /* equal height for both buttons */
+            flex: 1;
             font-size: 22px;
             background: yellow;
             border: none;
@@ -34,8 +34,8 @@
             cursor: pointer;
             font-weight: bold;
             display: flex;
-            align-items: center; /* vertical center */
-            justify-content: center; /* horizontal center */
+            align-items: center;
+            justify-content: center;
         }
         header button.active {
             background: #ffd700;
@@ -45,23 +45,22 @@
             flex: 1;
             padding: 20px;
             overflow-y: auto;
+            position: relative; /* so button can be positioned inside */
         }
         button#recordBtn {
-    position: fixed;
-    bottom: 20px;
-    left: 50%; /* center in content area */
-    transform: translateX(-50%);
-    padding: 15px 30px;
-    font-size: 18px;
-    background: green;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    z-index: 5; /* lower than sidebar */
-}
-
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            font-size: 18px;
+            background: green;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
         .stats { 
             margin-bottom: 20px; 
             font-size: 18px; 
@@ -222,10 +221,9 @@
                 dailyCounts[key] = (dailyCounts[key] || 0) + 1;
             });
 
-            const labels = Object.keys(dailyCounts).reverse();
+                        const labels = Object.keys(dailyCounts).reverse();
             const counts = labels.map(l => dailyCounts[l]);
 
-            const ctx = document.getElementById('cigsPer
             const ctx = document.getElementById('cigsPerDayChart').getContext('2d');
             if (cigsChart) {
                 cigsChart.data.labels = labels;

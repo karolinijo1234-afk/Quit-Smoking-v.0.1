@@ -1,29 +1,34 @@
 <!DOCTYPE html>
 <html>
-<!DOCTYPE html>
-<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smoking Tracker</title>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; }
+        body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #000; /* Black background */
+            color: #fff; /* White text */
+        }
         header {
             display: flex;
-            background: #ff4d4d;
-            color: white;
+            background: yellow; /* Yellow tabs */
+            color: black; /* Black text on tabs */
         }
         header button {
             flex: 1;
             padding: 15px;
             font-size: 16px;
-            background: none;
+            background: yellow; /* Yellow background */
             border: none;
-            color: white;
+            color: black; /* Black text */
             cursor: pointer;
+            font-weight: bold;
         }
         header button.active {
-            background: rgba(255,255,255,0.2);
+            background: #ffd700; /* Slightly darker yellow for active tab */
         }
         .tab-content { padding: 20px; }
         button#recordBtn {
@@ -33,11 +38,12 @@
             transform: translateX(-50%);
             padding: 15px 30px;
             font-size: 18px;
-            background: #ff4d4d;
-            color: white;
+            background: green; /* Green button */
+            color: white; /* White text */
             border: none;
             border-radius: 8px;
             cursor: pointer;
+            font-weight: bold;
         }
         .stats { 
             margin-bottom: 20px; 
@@ -46,6 +52,7 @@
         }
         h1, h2 {
             text-align: center;
+            color: white; /* Ensure headings are white */
         }
         table {
             width: 80%;
@@ -53,13 +60,16 @@
             border-collapse: collapse;
             margin-top: 10px;
             text-align: center;
+            background-color: #111; /* Dark table background */
+            color: white; /* White text in table */
         }
         th, td {
-            border: 1px solid #ccc;
+            border: 1px solid #444; /* Darker borders */
             padding: 8px;
         }
         th {
-            background: #f2f2f2;
+            background: #222; /* Darker header row */
+            color: white;
         }
     </style>
     <link rel="manifest" href="/manifest.json">
@@ -131,16 +141,13 @@
             const data = await res.json();
             const now = new Date();
 
-            // Filter today's records based on custom day cutoff
             const todayRecords = data.filter(r => {
                 const recDate = new Date(r.timestamp);
                 return isSameCustomDay(recDate, now);
             });
 
-            // Total today
             totalTodayEl.textContent = todayRecords.length;
 
-            // Last cigarette
             if (todayRecords.length > 0) {
                 const last = new Date(todayRecords[0].timestamp);
                 lastTimeEl.textContent = last.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
@@ -148,7 +155,6 @@
                 lastTimeEl.textContent = '–';
             }
 
-            // Average time between cigarettes today
             if (todayRecords.length > 1) {
                 let totalDiffMs = 0;
                 for (let i = 0; i < todayRecords.length - 1; i++) {
@@ -164,7 +170,6 @@
                 avgTimeEl.textContent = '–';
             }
 
-            // Populate Reports table with last 10 records
             recordsTableBody.innerHTML = data
                 .slice(0, 10)
                 .map((r, index) => {
@@ -173,7 +178,6 @@
                 })
                 .join('');
 
-            // Build daily counts for chart
             const dailyCounts = {};
             data.forEach(r => {
                 const d = new Date(r.timestamp);
@@ -184,7 +188,6 @@
             const labels = Object.keys(dailyCounts).reverse();
             const counts = labels.map(l => dailyCounts[l]);
 
-            // Draw or update chart
             const ctx = document.getElementById('cigsPerDayChart').getContext('2d');
             if (cigsChart) {
                 cigsChart.data.labels = labels;
@@ -218,7 +221,6 @@
 
         loadRecords();
 
-        // Tab switching
         const tabTracker = document.getElementById('tabTracker');
         const tabReports = document.getElementById('tabReports');
         const trackerTab = document.getElementById('trackerTab');
@@ -234,139 +236,9 @@
         tabReports.addEventListener('click', () => {
             tabReports.classList.add('active');
             tabTracker.classList.remove('active');
-            trackerTab.style.display = 'none';
-            reportsTab.style.display = 'block';
-        });
-    </script>
-
-    <script>
-    if ('serviceWorker' in
-<body>
-    <header>
-        <button id="tabTracker" class="active">Tracker</button>
-        <button id="tabReports">Reports</button>
-    </header>
-
-    <!-- Tracker Tab -->
-    <div id="trackerTab" class="tab-content">
-        <h1>Smoking Tracker</h1>
-        <div class="stats">
-            <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
-            <p><strong>Average time between cigarettes today:</strong> <span id="avgTime">–</span></p>
-            <p><strong>Last cigarette:</strong> <span id="lastTime">–</span></p>
-        </div>
-        <button id="recordBtn">Record Smoking</button>
-    </div>
-
-    <!-- Reports Tab -->
-    <div id="reportsTab" class="tab-content" style="display:none;">
-        <h1>Last 10 records</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Records</th>
-                </tr>
-            </thead>
-            <tbody id="recordsTableBody">
-                <!-- Records will be inserted here -->
-            </tbody>
-        </table>
-    </div>
-
-    <script>
-        const recordBtn = document.getElementById('recordBtn');
-        const totalTodayEl = document.getElementById('totalToday');
-        const avgTimeEl = document.getElementById('avgTime');
-        const lastTimeEl = document.getElementById('lastTime');
-        const recordsTableBody = document.getElementById('recordsTableBody');
-
-        const LT_TIMEZONE = 'Europe/Vilnius';
-        const CUTOFF_HOUR = 4; // 4 AM cutoff
-
-        function isSameCustomDay(dateA, dateB) {
-            // Shift both dates back by cutoff hours before comparing
-            const shiftedA = new Date(dateA.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
-            const shiftedB = new Date(dateB.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
-            return shiftedA.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE }) ===
-                   shiftedB.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
-        }
-
-        async function loadRecords() {
-            const res = await fetch('/records');
-            const data = await res.json();
-
-            const now = new Date();
-
-            // Filter today's records based on custom day cutoff
-            const todayRecords = data.filter(r => {
-                const recDate = new Date(r.timestamp);
-                return isSameCustomDay(recDate, now);
-            });
-
-            // Total today
-            totalTodayEl.textContent = todayRecords.length;
-
-            // Last cigarette
-            if (todayRecords.length > 0) {
-                const last = new Date(todayRecords[0].timestamp);
-                lastTimeEl.textContent = last.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
-            } else {
-                lastTimeEl.textContent = '–';
-            }
-
-            // Average time between cigarettes today
-            if (todayRecords.length > 1) {
-                let totalDiffMs = 0;
-                for (let i = 0; i < todayRecords.length - 1; i++) {
-                    const t1 = new Date(todayRecords[i].timestamp);
-                    const t2 = new Date(todayRecords[i + 1].timestamp);
-                    totalDiffMs += (t1 - t2);
-                }
-                const avgMs = totalDiffMs / (todayRecords.length - 1);
-                const hours = Math.floor(avgMs / (1000 * 60 * 60));
-                const minutes = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
-                avgTimeEl.textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-            } else {
-                avgTimeEl.textContent = '–';
-            }
-
-            // Populate Reports table with last 10 records (newest first)
-            recordsTableBody.innerHTML = data
-                .slice(0, 10)
-                .map((r, index) => {
-                    const localTime = new Date(r.timestamp).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
-                    return `<tr><td>${index + 1}</td><td>${localTime}</td></tr>`;
-                })
-                .join('');
-        }
-
-        recordBtn.addEventListener('click', async () => {
-            await fetch('/record', { method: 'POST' });
-            loadRecords();
-        });
-
-        loadRecords();
-
-        // Tab switching
-        const tabTracker = document.getElementById('tabTracker');
-        const tabReports = document.getElementById('tabReports');
-        const trackerTab = document.getElementById('trackerTab');
-        const reportsTab = document.getElementById('reportsTab');
-
-        tabTracker.addEventListener('click', () => {
-            tabTracker.classList.add('active');
-            tabReports.classList.remove('active');
-            trackerTab.style.display = 'block';
-            reportsTab.style.display = 'none';
-        });
-
-        tabReports.addEventListener('click', () => {
-            tabReports.classList.add('active');
-            tabTracker.classList.remove('active');
-            trackerTab.style.display = 'none';
-            reportsTab.style.display = 'block';
-        });
+        trackerTab.style.display = 'none';
+        reportsTab.style.display = 'block';
+    });
     </script>
 
     <script>

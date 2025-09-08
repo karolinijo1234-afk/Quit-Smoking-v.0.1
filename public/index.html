@@ -1,304 +1,237 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smoking Tracker</title>
-    <style>
-        body { 
-            font-family: sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            background-color: #000; 
-            color: #fff; 
-            display: flex;
-            height: 100vh;
-        }
-        /* Sidebar */
-        header {
-            display: flex;
-            flex-direction: column;
-            background: yellow;
-            color: black;
-            width: 200px;
-            flex-shrink: 0;
-            height: 100vh;
-            z-index: 10; /* ensure sidebar stays on top */
-        }
-        header button {
-            flex: 1;
-            font-size: 22px;
-            background: yellow;
-            border: none;
-            color: black;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        header button.active {
-            background: #ffd700;
-        }
-        /* Main content */
-        .tab-content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            position: relative; /* so button can be positioned inside */
-        }
-        button#recordBtn {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 15px 30px;
-            font-size: 18px;
-            background: green;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .stats { 
-            margin-bottom: 20px; 
-            font-size: 18px; 
-            text-align: center;
-        }
-        h1, h2 {
-            text-align: center;
-            color: white;
-        }
-        table {
-            width: 80%;
-            margin: 0 auto;
-            border-collapse: collapse;
-            margin-top: 10px;
-            text-align: center;
-            background-color: #111;
-            color: white;
-        }
-        th, td {
-            border: 1px solid #444;
-            padding: 8px;
-        }
-        th {
-            background: #222;
-            color: white;
-        }
-    </style>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ff4d4d">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smoking Tracker</title>
+<style>
+    body { font-family: sans-serif; margin: 0; padding: 0; background-color: #000; color: #fff; display: flex; height: 100vh; }
+    header { display: flex; flex-direction: column; background: yellow; color: black; width: 10vw; flex-shrink: 0; height: 100vh; z-index: 10; }
+    header button { flex: 1; font-size: 22px; background: yellow; border: none; color: black; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+    header button.active { background: #ffd700; }
+    .tab-content { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
+    button#recordBtn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; font-size: 18px; background: green; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .stats { margin-bottom: 20px; font-size: 18px; text-align: center; }
+    h1, h2 { text-align: center; color: white; }
+    table { width: 80%; margin: 0 auto; border-collapse: collapse; margin-top: 10px; text-align: center; background-color: #111; color: white; }
+    th, td { border: 1px solid #444; padding: 8px; }
+    th { background: #222; color: white; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- Sidebar Tabs -->
-    <header>
-        <button id="tabTracker" class="active">Tracker</button>
-        <button id="tabReports">Reports</button>
-    </header>
+<header>
+    <button id="tabTracker" class="active">Tracker</button>
+    <button id="tabReports">Reports</button>
+</header>
 
-    <!-- Tracker Tab -->
-    <div id="trackerTab" class="tab-content">
-        <h1>Smoking Tracker</h1>
-        <div class="stats">
-            <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
-            <p><strong>Average time between cigarettes today:</strong> <span id="avgTime">–</span></p>
-            <p><strong>Last cigarette:</strong> <span id="lastTime">–</span></p>
-            <p><strong>Time since:</strong> <span id="timeSince">–</span></p>
-        </div>
-        <button id="recordBtn">Log</button>
+<div id="trackerTab" class="tab-content">
+    <h1>Smoking Tracker</h1>
+    <div class="stats">
+        <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
+        <p><strong>Average time between cigarettes today:</strong> <span id="avgTime">–</span></p>
+        <p><strong>Last cigarette:</strong> <span id="lastTime">–</span></p>
+        <p><strong>Time since:</strong> <span id="timeSince">–</span></p>
     </div>
+    <button id="recordBtn">Log</button>
+</div>
 
-    <!-- Reports Tab -->
-    <div id="reportsTab" class="tab-content" style="display:none;">
-        <h2>Cigarettes per day</h2>
-        <canvas id="cigsPerDayChart" width="400" height="200"></canvas>
+<div id="reportsTab" class="tab-content" style="display:none;">
+    <h2>Cigarettes per day</h2>
+    <canvas id="cigsPerDayChart" width="400" height="200"></canvas>
+    <h1>Last 10 records</h1>
+    <table>
+        <thead><tr><th>#</th><th>Records</th></tr></thead>
+        <tbody id="recordsTableBody"></tbody>
+    </table>
+</div>
 
-        <h1>Last 10 records</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Records</th>
-                </tr>
-            </thead>
-            <tbody id="recordsTableBody"></tbody>
-        </table>
-    </div>
-
-    <script>
-        const recordBtn = document.getElementById('recordBtn');
-        const totalTodayEl = document.getElementById('totalToday');
-        const avgTimeEl = document.getElementById('avgTime');
-        const lastTimeEl = document.getElementById('lastTime');
-        const timeSinceEl = document.getElementById('timeSince');
-        const recordsTableBody = document.getElementById('recordsTableBody');
-
-        const LT_TIMEZONE = 'Europe/Vilnius';
-        const CUTOFF_HOUR = 4;
-        let lastCigaretteTime = null;
-        let timeSinceInterval = null;
-
-        function isSameCustomDay(dateA, dateB) {
-            const shiftedA = new Date(dateA.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
-            const shiftedB = new Date(dateB.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
-            return shiftedA.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE }) ===
-                   shiftedB.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+<script>
+// ====== ONE-TIME SEEDING OF YOUR HISTORY ======
+if (!localStorage.getItem('smokingRecords')) {
+    function generateDayRecords(dateStr, count) {
+        const records = [];
+        const start = new Date(`${dateStr}T08:00:00+03:00`);
+        const end = new Date(`${dateStr}T22:00:00+03:00`);
+        if (count === 1) { records.push(start.toISOString()); return records; }
+        const interval = (end - start) / (count - 1);
+        for (let i = 0; i < count; i++) {
+            records.push(new Date(start.getTime() + i * interval).toISOString());
         }
-
-        function getCustomDayKey(date) {
-            const shifted = new Date(date.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
-            return shifted.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
-        }
-
-        function updateTimeSince() {
-            if (!lastCigaretteTime) {
-                timeSinceEl.textContent = '–';
-                return;
-            }
-            const diffMs = Date.now() - lastCigaretteTime.getTime();
-            const hours = Math.floor(diffMs / (1000 * 60 * 60));
-            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-            timeSinceEl.textContent = `${hours}h ${minutes}m ${seconds}s`;
-        }
-
-        let cigsChart;
-
-        async function loadRecords() {
-            const res = await fetch('/records');
-            const data = await res.json();
-            const now = new Date();
-
-            const todayRecords = data.filter(r => {
-                const recDate = new Date(r.timestamp);
-                return isSameCustomDay(recDate, now);
-            });
-
-            totalTodayEl.textContent = todayRecords.length;
-
-            if (todayRecords.length > 0) {
-                lastCigaretteTime = new Date(todayRecords[0].timestamp);
-                lastTimeEl.textContent = lastCigaretteTime.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
-                if (timeSinceInterval) clearInterval(timeSinceInterval);
-                updateTimeSince();
-                timeSinceInterval = setInterval(updateTimeSince, 1000);
-            } else {
-                lastCigaretteTime = null;
-                lastTimeEl.textContent = '–';
-                timeSinceEl.textContent = '–';
-            }
-
-            if (todayRecords.length > 1) {
-                let totalDiffMs = 0;
-                for (let i = 0; i < todayRecords.length - 1; i++) {
-                    const t1 = new Date(todayRecords[i].timestamp);
-                    const t2 = new Date(todayRecords[i + 1].timestamp);
-                    totalDiffMs += (t1 - t2);
-                }
-                const avgMs = totalDiffMs / (todayRecords.length - 1);
-                const hours = Math.floor(avgMs / (1000 * 60 * 60));
-                const minutes = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
-                avgTimeEl.textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-            } else {
-                avgTimeEl.textContent = '–';
-            }
-
-            recordsTableBody.innerHTML = data
-                .slice(0, 10)
-                .map((r, index) => {
-                    const localTime = new Date(r.timestamp).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
-                    return `<tr><td>${index + 1}</td><td>${localTime}</td></tr>`;
-                })
-                .join('');
-
-            const dailyCounts = {};
-            data.forEach(r => {
-                const d = new Date(r.timestamp);
-                const key = getCustomDayKey(d);
-                dailyCounts[key] = (dailyCounts[key] || 0) + 1;
-            });
-
-                        const labels = Object.keys(dailyCounts).reverse();
-            const counts = labels.map(l => dailyCounts[l]);
-
-            const ctx = document.getElementById('cigsPerDayChart').getContext('2d');
-            if (cigsChart) {
-                cigsChart.data.labels = labels;
-                cigsChart.data.datasets[0].data = counts;
-                cigsChart.update();
-            } else {
-                cigsChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Cigarettes per day',
-                            data: counts,
-                            backgroundColor: '#ff4d4d'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                labels: {
-                                    color: '#fff' // white legend text for dark theme
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: '#fff' },
-                                grid: { color: '#444' }
-                            },
-                            y: {
-                                beginAtZero: true,
-                                ticks: { color: '#fff' },
-                                grid: { color: '#444' }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        recordBtn.addEventListener('click', async () => {
-            await fetch('/record', { method: 'POST' });
-            loadRecords();
-        });
-
-        loadRecords();
-
-        // Tab switching
-        const tabTracker = document.getElementById('tabTracker');
-        const tabReports = document.getElementById('tabReports');
-        const trackerTab = document.getElementById('trackerTab');
-        const reportsTab = document.getElementById('reportsTab');
-
-        tabTracker.addEventListener('click', () => {
-            tabTracker.classList.add('active');
-            tabReports.classList.remove('active');
-            trackerTab.style.display = 'block';
-            reportsTab.style.display = 'none';
-        });
-
-        tabReports.addEventListener('click', () => {
-            tabReports.classList.add('active');
-            tabTracker.classList.remove('active');
-            trackerTab.style.display = 'none';
-            reportsTab.style.display = 'block';
-        });
-    </script>
-
-    <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('SW registered with scope:', reg.scope))
-            .catch(err => console.error('SW registration failed:', err));
+        return records;
     }
-    </script>
+    const sept2 = generateDayRecords('2025-09-02', 17);
+    const sept3 = generateDayRecords('2025-09-03', 12);
+    const sept4 = generateDayRecords('2025-09-04', 11);
+    const sept5 = generateDayRecords('2025-09-05', 14);
+    const sept6 = generateDayRecords('2025-09-06', 11);
+    const sept7 = generateDayRecords('2025-09-07', 10);
+    const todayDate = new Date().toISOString().slice(0,10);
+    const today = generateDayRecords(todayDate, 10);
+    const all = [...today, ...sept7, ...sept6, ...sept5, ...sept4, ...sept3, ...sept2];
+    localStorage.setItem('smokingRecords', JSON.stringify(all));
+}
+// ====== END SEEDING ======
+
+const STORAGE_KEY = 'smokingRecords';
+const LT_TIMEZONE = 'Europe/Vilnius';
+const CUTOFF_HOUR = 4;
+let lastCigaretteTime = null;
+let timeSinceInterval = null;
+let cigsChart;
+
+function getRecords() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+}
+function saveRecords(records) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+function isSameCustomDay(dateA, dateB) {
+    const shiftedA = new Date(dateA.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+    const shiftedB = new Date(dateB.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+    return shiftedA.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE }) ===
+           shiftedB.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+}
+function getCustomDayKey(date) {
+    const shifted = new Date(date.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+    return shifted.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+}
+function updateTimeSince() {
+    if (!lastCigaretteTime) { timeSinceEl.textContent = '–'; return; }
+    const diffMs = Date.now() - lastCigaretteTime.getTime();
+    const h = Math.floor(diffMs / (1000 * 60 * 60));
+    const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((diffMs % (1000 * 60)) / 1000);
+    timeSinceEl.textContent = `${h}h ${m}m ${s}s`;
+}
+
+const recordBtn = document.getElementById('recordBtn');
+const totalTodayEl = document.getElementById('totalToday');
+const avgTimeEl = document.getElementById('avgTime');
+const lastTimeEl = document.getElementById('lastTime');
+const timeSinceEl = document.getElementById('timeSince');
+const recordsTableBody = document.getElementById('recordsTableBody');
+
+function loadRecords() {
+    const data = getRecords();
+    const now = new Date();
+    const todayRecords = data.filter(ts => isSameCustomDay(new Date(ts), now));
+
+    totalTodayEl.textContent = todayRecords.length;
+
+    if (todayRecords.length > 0) {
+        lastCigaretteTime = new Date(todayRecords[0]);
+        lastTimeEl.textContent = lastCigaretteTime.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
+        if (timeSinceInterval) clearInterval(timeSinceInterval);
+        updateTimeSince();
+        timeSinceInterval = setInterval(updateTimeSince, 1000);
+    } else {
+        lastCigaretteTime = null;
+        lastTimeEl.textContent = '–';
+        timeSinceEl.textContent = '–';
+    }
+
+    if (todayRecords.length > 1) {
+        let totalDiffMs = 0;
+        for (let i = 0; i < todayRecords.length - 1; i++) {
+            totalDiffMs += (new Date(todayRecords[i]) - new Date(todayRecords[i + 1]));
+        }
+                const avgMs = totalDiffMs / (todayRecords.length - 1);
+        const h = Math.floor(avgMs / (1000 * 60 * 60));
+        const m = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
+        avgTimeEl.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    } else {
+        avgTimeEl.textContent = '–';
+    }
+
+    recordsTableBody.innerHTML = data
+        .slice(0, 10)
+        .map((ts, i) => `<tr><td>${i + 1}</td><td>${new Date(ts).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE })}</td></tr>`)
+        .join('');
+
+    const dailyCounts = {};
+    data.forEach(ts => {
+        const key = getCustomDayKey(new Date(ts));
+        dailyCounts[key] = (dailyCounts[key] || 0) + 1;
+    });
+    const labels = Object.keys(dailyCounts).reverse();
+    const counts = labels.map(l => dailyCounts[l]);
+
+    const ctx = document.getElementById('cigsPerDayChart').getContext('2d');
+    if (cigsChart) {
+        cigsChart.data.labels = labels;
+        cigsChart.data.datasets[0].data = counts;
+        cigsChart.update();
+    } else {
+        cigsChart = new Chart(ctx, {
+            type: 'bar',
+            data: { 
+                labels, 
+                datasets: [{ 
+                    label: 'Cigarettes per day', 
+                    data: counts, 
+                    backgroundColor: '#ff4d4d' 
+                }] 
+            },
+            options: {
+                responsive: true,
+                plugins: { 
+                    legend: { 
+                        labels: { color: '#fff' } 
+                    } 
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#fff' },
+                        grid: { color: '#444' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#fff' },
+                        grid: { color: '#444' }
+                    }
+                }
+            }
+        });
+    }
+}
+
+recordBtn.addEventListener('click', () => {
+    const records = getRecords();
+    records.unshift(new Date().toISOString()); // newest first
+    saveRecords(records);
+    loadRecords();
+});
+
+loadRecords();
+
+// Tab switching
+const tabTracker = document.getElementById('tabTracker');
+const tabReports = document.getElementById('tabReports');
+const trackerTab = document.getElementById('trackerTab');
+const reportsTab = document.getElementById('reportsTab');
+
+tabTracker.addEventListener('click', () => {
+    tabTracker.classList.add('active');
+    tabReports.classList.remove('active');
+    trackerTab.style.display = 'block';
+    reportsTab.style.display = 'none';
+});
+
+tabReports.addEventListener('click', () => {
+    tabReports.classList.add('active');
+    tabTracker.classList.remove('active');
+    trackerTab.style.display = 'none';
+    reportsTab.style.display = 'block';
+});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered with scope:', reg.scope))
+        .catch(err => console.error('SW registration failed:', err));
+}
+</script>
 </body>
 </html>

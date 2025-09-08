@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html>
+<!DOCTYPE html>
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,16 +39,24 @@
             border-radius: 8px;
             cursor: pointer;
         }
-        .stats { margin-bottom: 20px; font-size: 18px; }
+        .stats { 
+            margin-bottom: 20px; 
+            font-size: 18px; 
+            text-align: center;
+        }
+        h1, h2 {
+            text-align: center;
+        }
         table {
-            width: 100%;
+            width: 80%;
+            margin: 0 auto;
             border-collapse: collapse;
             margin-top: 10px;
+            text-align: center;
         }
         th, td {
             border: 1px solid #ccc;
             padding: 8px;
-            text-align: center;
         }
         th {
             background: #f2f2f2;
@@ -54,6 +64,7 @@
     </style>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ff4d4d">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header>
@@ -66,21 +77,23 @@
         <h1>Smoking Tracker</h1>
         <div class="stats">
             <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
-            <p><strong>Average time between presses today:</strong> <span id="avgTime">–</span></p>
-            <p><strong>Last press time:</strong> <span id="lastTime">–</span></p>
+            <p><strong>Average time between cigarettes today:</strong> <span id="avgTime">–</span></p>
+            <p><strong>Last cigarette:</strong> <span id="lastTime">–</span></p>
         </div>
         <button id="recordBtn">Record Smoking</button>
     </div>
 
     <!-- Reports Tab -->
     <div id="reportsTab" class="tab-content" style="display:none;">
-        <h1>Reports</h1>
-        <p>Last 10 records (newest first):</p>
+        <h2>Cigarettes per day</h2>
+        <canvas id="cigsPerDayChart" width="400" height="200"></canvas>
+
+        <h1>Last 10 records</h1>
         <table>
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Time (LT)</th>
+                    <th>Records</th>
                 </tr>
             </thead>
             <tbody id="recordsTableBody">
@@ -97,22 +110,37 @@
         const recordsTableBody = document.getElementById('recordsTableBody');
 
         const LT_TIMEZONE = 'Europe/Vilnius';
+        const CUTOFF_HOUR = 4; // 4 AM cutoff
+
+        function isSameCustomDay(dateA, dateB) {
+            const shiftedA = new Date(dateA.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+            const shiftedB = new Date(dateB.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+            return shiftedA.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE }) ===
+                   shiftedB.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+        }
+
+        function getCustomDayKey(date) {
+            const shifted = new Date(date.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+            return shifted.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+        }
+
+        let cigsChart;
 
         async function loadRecords() {
             const res = await fetch('/records');
             const data = await res.json();
+            const now = new Date();
 
-            // Filter today's records
-            const today = new Date().toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+            // Filter today's records based on custom day cutoff
             const todayRecords = data.filter(r => {
-                const recDate = new Date(r.timestamp).toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
-                return recDate === today;
+                const recDate = new Date(r.timestamp);
+                return isSameCustomDay(recDate, now);
             });
 
             // Total today
             totalTodayEl.textContent = todayRecords.length;
 
-            // Last press time
+            // Last cigarette
             if (todayRecords.length > 0) {
                 const last = new Date(todayRecords[0].timestamp);
                 lastTimeEl.textContent = last.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
@@ -120,7 +148,174 @@
                 lastTimeEl.textContent = '–';
             }
 
-            // Average time between presses today
+            // Average time between cigarettes today
+            if (todayRecords.length > 1) {
+                let totalDiffMs = 0;
+                for (let i = 0; i < todayRecords.length - 1; i++) {
+                    const t1 = new Date(todayRecords[i].timestamp);
+                    const t2 = new Date(todayRecords[i + 1].timestamp);
+                    totalDiffMs += (t1 - t2);
+                }
+                const avgMs = totalDiffMs / (todayRecords.length - 1);
+                const hours = Math.floor(avgMs / (1000 * 60 * 60));
+                const minutes = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
+                avgTimeEl.textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            } else {
+                avgTimeEl.textContent = '–';
+            }
+
+            // Populate Reports table with last 10 records
+            recordsTableBody.innerHTML = data
+                .slice(0, 10)
+                .map((r, index) => {
+                    const localTime = new Date(r.timestamp).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
+                    return `<tr><td>${index + 1}</td><td>${localTime}</td></tr>`;
+                })
+                .join('');
+
+            // Build daily counts for chart
+            const dailyCounts = {};
+            data.forEach(r => {
+                const d = new Date(r.timestamp);
+                const key = getCustomDayKey(d);
+                dailyCounts[key] = (dailyCounts[key] || 0) + 1;
+            });
+
+            const labels = Object.keys(dailyCounts).reverse();
+            const counts = labels.map(l => dailyCounts[l]);
+
+            // Draw or update chart
+            const ctx = document.getElementById('cigsPerDayChart').getContext('2d');
+            if (cigsChart) {
+                cigsChart.data.labels = labels;
+                cigsChart.data.datasets[0].data = counts;
+                cigsChart.update();
+            } else {
+                cigsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Cigarettes per day',
+                            data: counts,
+                            backgroundColor: '#ff4d4d'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+        }
+
+        recordBtn.addEventListener('click', async () => {
+            await fetch('/record', { method: 'POST' });
+            loadRecords();
+        });
+
+        loadRecords();
+
+        // Tab switching
+        const tabTracker = document.getElementById('tabTracker');
+        const tabReports = document.getElementById('tabReports');
+        const trackerTab = document.getElementById('trackerTab');
+        const reportsTab = document.getElementById('reportsTab');
+
+        tabTracker.addEventListener('click', () => {
+            tabTracker.classList.add('active');
+            tabReports.classList.remove('active');
+            trackerTab.style.display = 'block';
+            reportsTab.style.display = 'none';
+        });
+
+        tabReports.addEventListener('click', () => {
+            tabReports.classList.add('active');
+            tabTracker.classList.remove('active');
+            trackerTab.style.display = 'none';
+            reportsTab.style.display = 'block';
+        });
+    </script>
+
+    <script>
+    if ('serviceWorker' in
+<body>
+    <header>
+        <button id="tabTracker" class="active">Tracker</button>
+        <button id="tabReports">Reports</button>
+    </header>
+
+    <!-- Tracker Tab -->
+    <div id="trackerTab" class="tab-content">
+        <h1>Smoking Tracker</h1>
+        <div class="stats">
+            <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
+            <p><strong>Average time between cigarettes today:</strong> <span id="avgTime">–</span></p>
+            <p><strong>Last cigarette:</strong> <span id="lastTime">–</span></p>
+        </div>
+        <button id="recordBtn">Record Smoking</button>
+    </div>
+
+    <!-- Reports Tab -->
+    <div id="reportsTab" class="tab-content" style="display:none;">
+        <h1>Last 10 records</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Records</th>
+                </tr>
+            </thead>
+            <tbody id="recordsTableBody">
+                <!-- Records will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const recordBtn = document.getElementById('recordBtn');
+        const totalTodayEl = document.getElementById('totalToday');
+        const avgTimeEl = document.getElementById('avgTime');
+        const lastTimeEl = document.getElementById('lastTime');
+        const recordsTableBody = document.getElementById('recordsTableBody');
+
+        const LT_TIMEZONE = 'Europe/Vilnius';
+        const CUTOFF_HOUR = 4; // 4 AM cutoff
+
+        function isSameCustomDay(dateA, dateB) {
+            // Shift both dates back by cutoff hours before comparing
+            const shiftedA = new Date(dateA.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+            const shiftedB = new Date(dateB.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+            return shiftedA.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE }) ===
+                   shiftedB.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+        }
+
+        async function loadRecords() {
+            const res = await fetch('/records');
+            const data = await res.json();
+
+            const now = new Date();
+
+            // Filter today's records based on custom day cutoff
+            const todayRecords = data.filter(r => {
+                const recDate = new Date(r.timestamp);
+                return isSameCustomDay(recDate, now);
+            });
+
+            // Total today
+            totalTodayEl.textContent = todayRecords.length;
+
+            // Last cigarette
+            if (todayRecords.length > 0) {
+                const last = new Date(todayRecords[0].timestamp);
+                lastTimeEl.textContent = last.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
+            } else {
+                lastTimeEl.textContent = '–';
+            }
+
+            // Average time between cigarettes today
             if (todayRecords.length > 1) {
                 let totalDiffMs = 0;
                 for (let i = 0; i < todayRecords.length - 1; i++) {

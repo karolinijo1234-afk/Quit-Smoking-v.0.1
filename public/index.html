@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smoking Tracker</title>
     <style>
         body { font-family: sans-serif; margin: 0; padding: 0; }
@@ -37,8 +37,20 @@
             border-radius: 8px;
             cursor: pointer;
         }
-        ul { list-style: none; padding: 0; }
         .stats { margin-bottom: 20px; font-size: 18px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background: #f2f2f2;
+        }
     </style>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ff4d4d">
@@ -49,6 +61,7 @@
         <button id="tabReports">Reports</button>
     </header>
 
+    <!-- Tracker Tab -->
     <div id="trackerTab" class="tab-content">
         <h1>Smoking Tracker</h1>
         <div class="stats">
@@ -56,34 +69,38 @@
             <p><strong>Average time between presses today:</strong> <span id="avgTime">–</span></p>
             <p><strong>Last press time:</strong> <span id="lastTime">–</span></p>
         </div>
-        <ul id="records"></ul>
         <button id="recordBtn">Record Smoking</button>
     </div>
 
+    <!-- Reports Tab -->
     <div id="reportsTab" class="tab-content" style="display:none;">
         <h1>Reports</h1>
-        <p>Here we’ll show charts, summaries, and trends.</p>
-        <p>(Coming soon)</p>
+        <p>Last 10 records (newest first):</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Time (LT)</th>
+                </tr>
+            </thead>
+            <tbody id="recordsTableBody">
+                <!-- Records will be inserted here -->
+            </tbody>
+        </table>
     </div>
 
     <script>
         const recordBtn = document.getElementById('recordBtn');
-        const recordsList = document.getElementById('records');
         const totalTodayEl = document.getElementById('totalToday');
         const avgTimeEl = document.getElementById('avgTime');
         const lastTimeEl = document.getElementById('lastTime');
+        const recordsTableBody = document.getElementById('recordsTableBody');
 
         const LT_TIMEZONE = 'Europe/Vilnius';
 
         async function loadRecords() {
             const res = await fetch('/records');
             const data = await res.json();
-
-            // Show all records
-            recordsList.innerHTML = data.map(r => {
-                const localTime = new Date(r.timestamp).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
-                return `<li>${localTime}</li>`;
-            }).join('');
 
             // Filter today's records
             const today = new Date().toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
@@ -118,6 +135,15 @@
             } else {
                 avgTimeEl.textContent = '–';
             }
+
+            // Populate Reports table with last 10 records (newest first)
+            recordsTableBody.innerHTML = data
+                .slice(0, 10)
+                .map((r, index) => {
+                    const localTime = new Date(r.timestamp).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
+                    return `<tr><td>${index + 1}</td><td>${localTime}</td></tr>`;
+                })
+                .join('');
         }
 
         recordBtn.addEventListener('click', async () => {
@@ -127,7 +153,7 @@
 
         loadRecords();
 
-        // Tab switching logic
+        // Tab switching
         const tabTracker = document.getElementById('tabTracker');
         const tabReports = document.getElementById('tabReports');
         const trackerTab = document.getElementById('trackerTab');

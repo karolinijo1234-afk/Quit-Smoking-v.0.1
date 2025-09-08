@@ -4,8 +4,26 @@
     <meta charset="UTF-8">
     <title>Smoking Tracker</title>
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 30px; }
-        button {
+        body { font-family: sans-serif; margin: 0; padding: 0; }
+        header {
+            display: flex;
+            background: #ff4d4d;
+            color: white;
+        }
+        header button {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        header button.active {
+            background: rgba(255,255,255,0.2);
+        }
+        .tab-content { padding: 20px; }
+        button#recordBtn {
             position: fixed;
             bottom: 20px;
             left: 50%;
@@ -25,16 +43,27 @@
     <meta name="theme-color" content="#ff4d4d">
 </head>
 <body>
-    <h1>Smoking Tracker</h1>
+    <header>
+        <button id="tabTracker" class="active">Tracker</button>
+        <button id="tabReports">Reports</button>
+    </header>
 
-    <div class="stats">
-        <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
-        <p><strong>Average time between presses today:</strong> <span id="avgTime">–</span></p>
-        <p><strong>Last press time:</strong> <span id="lastTime">–</span></p>
+    <div id="trackerTab" class="tab-content">
+        <h1>Smoking Tracker</h1>
+        <div class="stats">
+            <p><strong>Today’s total:</strong> <span id="totalToday">0</span></p>
+            <p><strong>Average time between presses today:</strong> <span id="avgTime">–</span></p>
+            <p><strong>Last press time:</strong> <span id="lastTime">–</span></p>
+        </div>
+        <ul id="records"></ul>
+        <button id="recordBtn">Record Smoking</button>
     </div>
 
-    <ul id="records"></ul>
-    <button id="recordBtn">Record Smoking</button>
+    <div id="reportsTab" class="tab-content" style="display:none;">
+        <h1>Reports</h1>
+        <p>Here we’ll show charts, summaries, and trends.</p>
+        <p>(Coming soon)</p>
+    </div>
 
     <script>
         const recordBtn = document.getElementById('recordBtn');
@@ -84,11 +113,7 @@
                 const avgMs = totalDiffMs / (todayRecords.length - 1);
                 const hours = Math.floor(avgMs / (1000 * 60 * 60));
                 const minutes = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
-                if (hours > 0) {
-                    avgTimeEl.textContent = `${hours}h ${minutes}m`;
-                } else {
-                    avgTimeEl.textContent = `${minutes}m`;
-                }
+                avgTimeEl.textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
             } else {
                 avgTimeEl.textContent = '–';
             }
@@ -100,6 +125,26 @@
         });
 
         loadRecords();
+
+        // Tab switching logic
+        const tabTracker = document.getElementById('tabTracker');
+        const tabReports = document.getElementById('tabReports');
+        const trackerTab = document.getElementById('trackerTab');
+        const reportsTab = document.getElementById('reportsTab');
+
+        tabTracker.addEventListener('click', () => {
+            tabTracker.classList.add('active');
+            tabReports.classList.remove('active');
+            trackerTab.style.display = 'block';
+            reportsTab.style.display = 'none';
+        });
+
+        tabReports.addEventListener('click', () => {
+            tabReports.classList.add('active');
+            tabTracker.classList.remove('active');
+            trackerTab.style.display = 'none';
+            reportsTab.style.display = 'block';
+        });
     </script>
 
     <script>

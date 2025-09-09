@@ -94,9 +94,12 @@
         <p><strong>Average time between cigarettes today:</strong> <span id="avgTime">–</span></p>
         <p><strong>Last cigarette:</strong> <span id="lastTime">–</span></p>
         <p><strong>Time since:</strong> <span id="timeSince">–</span></p>
+        <!-- New streak line -->
+        <p style="color:limegreen;"><strong>Streak:</strong> <span id="streakDays">0</span> days</p>
     </div>
     <button id="recordBtn">Log</button>
 </div>
+
 
 <div id="reportsTab" class="tab-content" style="display:none;">
     <h2>Cigarettes per day</h2>
@@ -240,6 +243,29 @@ function loadRecords() {
         const key = getCustomDayKey(new Date(ts));
         dailyCounts[key] = (dailyCounts[key] || 0) + 1;
     });
+    // Calculate streak (consecutive days with same or fewer cigarettes than previous day)
+    const dayKeys = Object.keys(dailyCounts)
+        .map(d => new Date(d))
+        .sort((a, b) => a - b)
+        .map(d => d.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE }));
+
+    let streak = 0;
+    let prevCount = null;
+
+    dayKeys.forEach(key => {
+        const count = dailyCounts[key];
+      if (prevCount === null || count <= prevCount) {
+    streak++;
+} else {
+    streak = 0; // reset streak
+}
+
+        prevCount = count;
+    });
+
+    const streakEl = document.getElementById('streakDays');
+    if (streakEl) streakEl.textContent = streak;
+
     const labels = Object.keys(dailyCounts).reverse();
     const counts = labels.map(l => dailyCounts[l]);
 

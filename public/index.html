@@ -8,30 +8,73 @@
 <meta name="theme-color" content="#000000">
 <link rel="icon" type="image/png" href="/icons/icon-192.png">
 <style>
-    body { font-family: sans-serif; margin: 0; padding: 0; background-color: #000; color: #fff; display: flex; height: 100vh; }
-    header { display: flex; flex-direction: column; background: yellow; color: black; width: 15vw; flex-shrink: 0; height: 100vh; z-index: 10; }
-    header button { flex: 1; font-size: 18px; background: yellow; border: none; color: black; cursor: pointer; font-weight: bold; writing-mode: vertical-rl; text-orientation: upright; display: flex; align-items: center; justify-content: center; }
-    header button.active { background: #ffd700; }
-    .tab-content { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
+    body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #000;
+        color: #fff;
+        display: flex;
+        flex-direction: column; /* stack header on top */
+        height: 100vh;
+    }
+    header {
+        display: flex;
+        flex-direction: row; /* horizontal tabs */
+        background: orange;
+        color: white;
+        width: 100%;
+        height: 60px;
+        flex-shrink: 0;
+        z-index: 10;
+    }
+    header button {
+        flex: 1;
+        font-size: 18px;
+        background: orange;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    header button.active {
+        background: #ff9933; /* lighter orange for active tab */
+    }
+    .tab-content {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        position: relative;
+    }
     button#recordBtn {
-    position: fixed; /* stays in place even when scrolling */
-    bottom: 20px;
-    left: calc(15vw + 50%); /* accounts for sidebar width */
-    transform: translateX(-50%);
-    padding: 15px 30px;
-    font-size: 18px;
-    background: green;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    z-index: 20; /* stays above other elements */
-}
-
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 15px 30px;
+        font-size: 18px;
+        background: green;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        z-index: 20;
+    }
     .stats { margin-bottom: 20px; font-size: 18px; text-align: center; }
     h1, h2 { text-align: center; color: white; }
-    table { width: 80%; margin: 0 auto; border-collapse: collapse; margin-top: 10px; text-align: center; background-color: #111; color: white; }
+    table {
+        width: 80%;
+        margin: 0 auto;
+        border-collapse: collapse;
+        margin-top: 10px;
+        text-align: center;
+        background-color: #111;
+        color: white;
+    }
     th, td { border: 1px solid #444; padding: 8px; }
     th { background: #222; color: white; }
 </style>
@@ -42,6 +85,7 @@
     <button id="tabTracker" class="active">Tracker</button>
     <button id="tabReports">Reports</button>
 </header>
+
 
 <div id="trackerTab" class="tab-content">
     <h1>Smoking Tracker</h1>

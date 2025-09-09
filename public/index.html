@@ -101,12 +101,36 @@
 <div id="reportsTab" class="tab-content" style="display:none;">
     <h2>Cigarettes per day</h2>
     <canvas id="cigsPerDayChart" width="400" height="200"></canvas>
+
+    <!-- New Potential Money Saved section -->
+    <h2>Progress Summary</h2>
+<table id="progressSummary" style="width:300px; margin-bottom:20px; border-collapse: collapse; text-align:center;">
+    <thead>
+        <tr>
+            <th style="border:1px solid #444; padding:6px;">Metric</th>
+            <th style="border:1px solid #444; padding:6px;">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="border:1px solid #444; padding:6px;">Cigarettes not smoked</td>
+            <td id="cigsNotSmoked" style="border:1px solid #444; padding:6px;">0</td>
+        </tr>
+        <tr>
+            <td style="border:1px solid #444; padding:6px;">Potential money saved</td>
+            <td id="moneySaved" style="border:1px solid #444; padding:6px;">€0.00</td>
+        </tr>
+    </tbody>
+</table>
+
+
     <h1>Last 10 records</h1>
     <table>
         <thead><tr><th>#</th><th>Records</th></tr></thead>
         <tbody id="recordsTableBody"></tbody>
     </table>
 </div>
+
 
 <script>
 // ====== ONE-TIME SEEDING OF YOUR HISTORY ======
@@ -203,7 +227,7 @@ function loadRecords() {
         const m = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
         avgTimeEl.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
     } else {
-                avgTimeEl.textContent = '–';
+        avgTimeEl.textContent = '–';
     }
 
     recordsTableBody.innerHTML = data
@@ -258,6 +282,38 @@ function loadRecords() {
     }
 }
 
+// NEW: Update Reports tab with Potential money saved
+function updateReports() {
+    const pricePerCig = 0.215; // EUR
+    const baselinePerDay = 20; // old habit
+
+    const data = getRecords();
+    const dailyCounts = {};
+
+    // Count cigarettes smoked per day
+    data.forEach(ts => {
+        const key = getCustomDayKey(new Date(ts));
+        dailyCounts[key] = (dailyCounts[key] || 0) + 1;
+    });
+
+    let totalSavedMoney = 0;
+    let totalNotSmoked = 0;
+
+    // Calculate totals
+    Object.values(dailyCounts).forEach(smoked => {
+        const avoided = Math.max(0, baselinePerDay - smoked);
+        totalNotSmoked += avoided;
+        totalSavedMoney += avoided * pricePerCig;
+    });
+
+    // Update the table cells
+    const moneyEl = document.getElementById('moneySaved');
+    const cigsEl = document.getElementById('cigsNotSmoked');
+
+    if (moneyEl) moneyEl.textContent = `€${totalSavedMoney.toFixed(2)}`;
+    if (cigsEl) cigsEl.textContent = totalNotSmoked;
+}
+
 recordBtn.addEventListener('click', () => {
     const records = getRecords();
     records.unshift(new Date().toISOString()); // newest first
@@ -285,15 +341,17 @@ tabReports.addEventListener('click', () => {
     tabTracker.classList.remove('active');
     trackerTab.style.display = 'none';
     reportsTab.style.display = 'block';
+    updateReports(); // refresh money saved when opening Reports
 });
 </script>
 
-<script>
+<<script>
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
         .then(reg => console.log('SW registered with scope:', reg.scope))
         .catch(err => console.error('SW registration failed:', err));
 }
 </script>
+
 </body>
 </html>

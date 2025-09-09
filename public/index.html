@@ -97,6 +97,14 @@
         <!-- New streak line -->
         <p style="color:limegreen;"><strong>Streak:</strong> <span id="streakDays">0</span> days</p>
     </div>
+<!-- Quitting Progress -->
+<div class="stats" style="text-align:center; margin-top:20px;">
+    <p><strong>Quitting Progress:</strong> <span id="quitPercent">0%</span></p>
+    <div style="background:#333; border-radius:8px; overflow:hidden; height:20px; width:80%; max-width:300px; margin:0 auto;">
+        <div id="quitProgressBar" style="background:limegreen; height:100%; width:0%;"></div>
+    </div>
+</div>
+
     <button id="recordBtn">Log</button>
 </div>
 
@@ -208,6 +216,34 @@ function loadRecords() {
 
     totalTodayEl.textContent = todayRecords.length;
 
+    // === Build daily counts with ISO keys ===
+    const dailyCounts = {};
+    data.forEach(ts => {
+        const dateObj = new Date(ts);
+        const shifted = new Date(dateObj.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+        const isoKey = shifted.toISOString().slice(0, 10); // YYYY-MM-DD
+        dailyCounts[isoKey] = (dailyCounts[isoKey] || 0) + 1;
+    });
+
+    // === Quitting Progress based on yesterday's total ===
+    const baselinePerDay = 20; // old habit
+    const sortedKeys = Object.keys(dailyCounts).sort(); // ISO keys sort naturally
+    let yesterdayCount = null;
+    if (sortedKeys.length > 1) {
+        const yesterdayKey = sortedKeys[sortedKeys.length - 2];
+        yesterdayCount = dailyCounts[yesterdayKey] || 0;
+    }
+    let progress = 0;
+    if (yesterdayCount !== null) {
+        progress = Math.max(0, Math.min(100, ((baselinePerDay - yesterdayCount) / baselinePerDay) * 100));
+    }
+    const quitPercentEl = document.getElementById('quitPercent');
+    const quitBarEl = document.getElementById('quitProgressBar');
+    if (quitPercentEl) quitPercentEl.textContent = `${progress.toFixed(0)}%`;
+    if (quitBarEl) quitBarEl.style.width = `${progress}%`;
+    // === End Quitting Progress ===
+
+    // === Tracker stats ===
     if (todayRecords.length > 0) {
         lastCigaretteTime = new Date(todayRecords[0]);
         lastTimeEl.textContent = lastCigaretteTime.toLocaleString('lt-LT', { timeZone: LT_TIMEZONE });
@@ -233,41 +269,33 @@ function loadRecords() {
         avgTimeEl.textContent = '–';
     }
 
+    // === Last 10 records table ===
     recordsTableBody.innerHTML = data
         .slice(0, 10)
         .map((ts, i) => `<tr><td>${i + 1}</td><td>${new Date(ts).toLocaleString('lt-LT', { timeZone: LT_TIMEZONE })}</td></tr>`)
         .join('');
 
-    const dailyCounts = {};
-    data.forEach(ts => {
-        const key = getCustomDayKey(new Date(ts));
-        dailyCounts[key] = (dailyCounts[key] || 0) + 1;
-    });
-    // Calculate streak (consecutive days with same or fewer cigarettes than previous day)
-    const dayKeys = Object.keys(dailyCounts)
-        .map(d => new Date(d))
-        .sort((a, b) => a - b)
-        .map(d => d.toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE }));
-
+    // === Streak calculation ===
     let streak = 0;
     let prevCount = null;
-
-    dayKeys.forEach(key => {
+    sortedKeys.forEach(key => {
         const count = dailyCounts[key];
-      if (prevCount === null || count <= prevCount) {
-    streak++;
-} else {
-    streak = 0; // reset streak
-}
-
+        if (prevCount === null || count <= prevCount) {
+            streak++;
+        } else {
+            streak = 0; // reset streak
+        }
         prevCount = count;
     });
-
     const streakEl = document.getElementById('streakDays');
     if (streakEl) streakEl.textContent = streak;
 
-    const labels = Object.keys(dailyCounts).reverse();
-    const counts = labels.map(l => dailyCounts[l]);
+    // === Chart update ===
+    const labels = sortedKeys.slice().reverse().map(k => {
+        const [y, m, d] = k.split('-');
+        return new Date(`${y}-${m}-${d}`).toLocaleDateString('lt-LT', { timeZone: LT_TIMEZONE });
+    });
+    const counts = sortedKeys.slice().reverse().map(k => dailyCounts[k]);
 
     const ctx = document.getElementById('cigsPerDayChart').getContext('2d');
     if (cigsChart) {
@@ -308,43 +336,41 @@ function loadRecords() {
     }
 }
 
-// NEW: Update Reports tab with Potential money saved
+// === Reports tab: money saved + cigarettes avoided ===
 function updateReports() {
     const pricePerCig = 0.215; // EUR
     const baselinePerDay = 20; // old habit
 
     const data = getRecords();
     const dailyCounts = {};
-
-    // Count cigarettes smoked per day
     data.forEach(ts => {
-        const key = getCustomDayKey(new Date(ts));
-        dailyCounts[key] = (dailyCounts[key] || 0) + 1;
+        const dateObj = new Date(ts);
+        const shifted = new Date(dateObj.getTime() - CUTOFF_HOUR * 60 * 60 * 1000);
+        const isoKey = shifted.toISOString().slice(0, 10);
+        dailyCounts[isoKey] = (dailyCounts[isoKey] || 0) + 1;
     });
 
     let totalSavedMoney = 0;
     let totalNotSmoked = 0;
-
-    // Calculate totals
     Object.values(dailyCounts).forEach(smoked => {
         const avoided = Math.max(0, baselinePerDay - smoked);
         totalNotSmoked += avoided;
         totalSavedMoney += avoided * pricePerCig;
     });
 
-    // Update the table cells
     const moneyEl = document.getElementById('moneySaved');
     const cigsEl = document.getElementById('cigsNotSmoked');
-
     if (moneyEl) moneyEl.textContent = `€${totalSavedMoney.toFixed(2)}`;
     if (cigsEl) cigsEl.textContent = totalNotSmoked;
 }
 
+// === Log button ===
 recordBtn.addEventListener('click', () => {
     const records = getRecords();
     records.unshift(new Date().toISOString()); // newest first
     saveRecords(records);
     loadRecords();
+    updateReports(); // keep Reports in sync
 });
 
 loadRecords();
